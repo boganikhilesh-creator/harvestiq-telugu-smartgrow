@@ -1,16 +1,18 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Sprout, LogIn, LogOut, UserCircle } from 'lucide-react';
+import { Menu, X, Sprout, LogIn, LogOut, UserCircle, Settings, ChevronDown } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const { t, language, setLanguage } = useLanguage();
   const { user, profile, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const navItems = [
     { key: 'nav.home', path: '/' },
@@ -27,7 +29,22 @@ const Navbar = () => {
     await signOut();
     navigate('/');
     setOpen(false);
+    setDropdownOpen(false);
   };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Farmer';
+  const initials = displayName.slice(0, 2).toUpperCase();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-border/50">
@@ -75,21 +92,61 @@ const Navbar = () => {
             {t('nav.langToggle')}
           </button>
 
-          {/* Auth buttons */}
+          {/* Auth area — desktop */}
           {user ? (
-            <div className="hidden lg:flex items-center gap-2">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium" style={{ color: 'hsl(var(--foreground))' }}>
-                <UserCircle className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} />
-                <span className="max-w-[120px] truncate">{profile?.full_name || user.email?.split('@')[0]}</span>
-              </div>
+            /* User avatar dropdown */
+            <div className="hidden lg:block relative" ref={dropdownRef}>
               <button
-                onClick={handleSignOut}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-all hover:bg-destructive/10"
-                style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }}
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-xl border transition-all hover:bg-primary/5"
+                style={{ borderColor: 'hsl(var(--border))' }}
               >
-                <LogOut className="w-4 h-4" />
-                Sign Out
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold"
+                  style={{ background: 'var(--gradient-primary)', color: 'hsl(var(--primary-foreground))' }}
+                >
+                  {initials}
+                </div>
+                <span className="text-sm font-medium max-w-[100px] truncate">{displayName}</span>
+                <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
               </button>
+
+              <AnimatePresence>
+                {dropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-full mt-2 w-52 rounded-xl border shadow-xl overflow-hidden"
+                    style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}
+                  >
+                    {/* User info header */}
+                    <div className="px-4 py-3 border-b" style={{ borderColor: 'hsl(var(--border))' }}>
+                      <p className="text-sm font-semibold truncate">{displayName}</p>
+                      <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                    </div>
+                    {/* Profile Settings */}
+                    <Link
+                      to="/profile"
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-3 text-sm transition-colors hover:bg-primary/5"
+                      style={{ color: 'hsl(var(--foreground))' }}
+                    >
+                      <Settings className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} />
+                      Profile Settings
+                    </Link>
+                    {/* Sign Out */}
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full flex items-center gap-2.5 px-4 py-3 text-sm transition-colors hover:bg-destructive/10 text-destructive"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sign Out
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           ) : (
             <div className="hidden lg:flex items-center gap-2">
@@ -145,14 +202,33 @@ const Navbar = () => {
                 </Link>
               ))}
 
-              {/* Mobile auth */}
+              {/* Mobile auth section */}
               <div className="border-t border-border/50 pt-2 mt-1 flex flex-col gap-1">
                 {user ? (
                   <>
-                    <div className="px-4 py-2 text-sm text-muted-foreground flex items-center gap-2">
-                      <UserCircle className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} />
-                      {profile?.full_name || user.email}
+                    {/* User info */}
+                    <div className="px-4 py-2 flex items-center gap-2.5">
+                      <div
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
+                        style={{ background: 'var(--gradient-primary)', color: 'hsl(var(--primary-foreground))' }}
+                      >
+                        {initials}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">{displayName}</p>
+                        <p className="text-xs text-muted-foreground">{user.email}</p>
+                      </div>
                     </div>
+                    {/* Profile Settings */}
+                    <Link
+                      to="/profile"
+                      onClick={() => setOpen(false)}
+                      className="px-4 py-3 rounded-lg text-sm font-medium flex items-center gap-2 text-foreground/70 hover:text-primary hover:bg-primary/5 transition-all"
+                    >
+                      <Settings className="w-4 h-4" />
+                      Profile Settings
+                    </Link>
+                    {/* Sign Out */}
                     <button
                       onClick={handleSignOut}
                       className="px-4 py-3 rounded-lg text-sm font-medium text-left flex items-center gap-2 text-destructive hover:bg-destructive/10 transition-all"
@@ -182,4 +258,5 @@ const Navbar = () => {
 };
 
 export default Navbar;
+
 
