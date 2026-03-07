@@ -44,11 +44,5 @@ const App = () => (
     </LanguageProvider>
   </QueryClientProvider>
 );
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </LanguageProvider>
-  </QueryClientProvider>
-);
 
 export default App;
