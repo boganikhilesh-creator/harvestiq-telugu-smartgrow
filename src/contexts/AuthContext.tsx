@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-interface Profile {
+export interface Profile {
   id: string;
   user_id: string;
   full_name: string | null;
@@ -10,6 +10,10 @@ interface Profile {
   farm_size: string | null;
   soil_type: string | null;
   preferred_language: string | null;
+  // stored in auth user_metadata (no schema change needed)
+  phone_number?: string | null;
+  preferred_crops?: string[] | null;
+  state?: string | null;
 }
 
 interface AuthContextType {
@@ -33,32 +37,42 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser]       = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (currentUser: User) => {
     const { data } = await supabase
       .from('profiles')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', currentUser.id)
       .single();
-    setProfile(data);
+
+    if (data) {
+      // Merge user_metadata fields (phone, crops, state) into profile
+      const meta = currentUser.user_metadata ?? {};
+      setProfile({
+        ...data,
+        phone_number:    meta.phone_number    ?? null,
+        preferred_crops: meta.preferred_crops ?? null,
+        state:           meta.state           ?? 'Telangana',
+      });
+    }
   };
 
   const refreshProfile = async () => {
-    if (user) await fetchProfile(user.id);
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (currentUser) await fetchProfile(currentUser);
   };
 
   useEffect(() => {
-    // Set up auth state listener BEFORE getSession
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          setTimeout(() => fetchProfile(session.user.id), 0);
+          setTimeout(() => fetchProfile(session.user), 0);
         } else {
           setProfile(null);
         }
@@ -66,11 +80,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Initial session check
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
+      if (session?.user) fetchProfile(session.user);
       setLoading(false);
     });
 
