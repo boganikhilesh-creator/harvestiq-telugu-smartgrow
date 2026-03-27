@@ -61,7 +61,25 @@ const Login = () => {
     setLoading(false);
 
     if (error) {
-      toast({ title: 'Login failed', description: error.message, variant: 'destructive' });
+      // Give clear, actionable messages for the most common cases
+      let title = 'Login failed';
+      let description = error.message;
+
+      if (error.message.toLowerCase().includes('email not confirmed')) {
+        title = 'Email not verified';
+        description = 'Please check your inbox and click the confirmation link we sent you when you signed up. Check your spam folder too.';
+      } else if (
+        error.message.toLowerCase().includes('invalid login') ||
+        error.message.toLowerCase().includes('invalid credentials')
+      ) {
+        title = 'Incorrect email or password';
+        description = 'Double-check your email and password and try again.';
+      } else if (error.message.toLowerCase().includes('too many requests')) {
+        title = 'Too many attempts';
+        description = 'Please wait a few minutes before trying again.';
+      }
+
+      toast({ title, description, variant: 'destructive' });
     } else {
       // Save or clear remembered email
       if (rememberMe) {

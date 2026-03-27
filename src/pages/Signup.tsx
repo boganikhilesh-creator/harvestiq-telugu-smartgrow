@@ -97,13 +97,13 @@ const Signup = () => {
     if (!validate()) return;
     setLoading(true);
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: form.email.trim().toLowerCase(),
       password: form.password,
       options: {
         data: {
           full_name: form.fullName.trim(),
-          username: form.username.trim().toLowerCase(),
+          username:  form.username.trim().toLowerCase(),
         },
         emailRedirectTo: window.location.origin,
       },
@@ -115,23 +115,32 @@ const Signup = () => {
       return;
     }
 
-    // After signup, update profile with farm details + username as display name
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await supabase.from('profiles').update({
-        full_name: form.fullName.trim(),
-        district:  form.district  || null,
-        soil_type: form.soilType  || null,
-        farm_size: form.farmSize  || null,
-      }).eq('user_id', user.id);
+    // data.user is available even before email confirmation
+    if (data.user) {
+      // UPSERT the profile row (insert if missing, update if it exists)
+      await supabase.from('profiles').upsert({
+        user_id:   data.user.id,
+        full_name: form.fullName.trim() || null,
+        district:  form.district        || null,
+        soil_type: form.soilType        || null,
+        farm_size: form.farmSize        || null,
+      }, { onConflict: 'user_id' });
     }
 
     setLoading(false);
-    toast({
-      title: 'Account created! 🌾',
-      description: 'Welcome to HarvestIQ. Please check your email to verify your account.',
-    });
-    navigate('/');
+
+    // If session is present the user is immediately logged in (email confirm disabled)
+    if (data.session) {
+      toast({ title: 'Welcome to HarvestIQ! 🌾', description: 'Your account is ready.' });
+      navigate('/');
+    } else {
+      // Email confirmation required
+      toast({
+        title: 'Account created! Check your email 📧',
+        description: `We sent a confirmation link to ${form.email.trim().toLowerCase()}. Click it to activate your account, then sign in.`,
+      });
+      navigate('/login');
+    }
   };
 
   const inputBase = 'w-full rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 transition-all';

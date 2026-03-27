@@ -43,14 +43,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (currentUser: User) => {
-    const { data } = await supabase
+    let { data } = await supabase
       .from('profiles')
       .select('*')
       .eq('user_id', currentUser.id)
       .single();
 
+    // Auto-create the profile row if it doesn't exist yet
+    if (!data) {
+      const meta = currentUser.user_metadata ?? {};
+      const { data: created } = await supabase
+        .from('profiles')
+        .upsert({
+          user_id:   currentUser.id,
+          full_name: meta.full_name ?? null,
+        }, { onConflict: 'user_id' })
+        .select()
+        .single();
+      data = created;
+    }
+
     if (data) {
-      // Merge user_metadata fields (phone, crops, state) into profile
       const meta = currentUser.user_metadata ?? {};
       setProfile({
         ...data,
