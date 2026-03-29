@@ -62,7 +62,7 @@ const PlantHealth = () => {
       const isHealthy = data.healthy;
       
       if (isHealthy) {
-        setResult({ healthy: true, aiLabel: data.topLabel, confidence: data.confidence });
+        setResult({ healthy: true, aiLabel: data.topLabel, confidence: data.confidence, aiDescription: data.description });
       } else {
         // Try to match AI prediction to our disease database for detailed info
         const diseases = diseaseDatabase[selectedCrop];
