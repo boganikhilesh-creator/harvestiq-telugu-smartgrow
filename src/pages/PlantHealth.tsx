@@ -19,6 +19,7 @@ const PlantHealth = () => {
     healthy: boolean;
     aiLabel?: string;
     confidence?: number;
+    aiDescription?: string;
     data?: typeof diseaseDatabase['rice'][0];
   }>(null);
   const fileRef = useRef<HTMLInputElement>(null);
