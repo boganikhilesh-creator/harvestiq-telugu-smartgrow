@@ -6,7 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { telanganaWeather } from '@/data/farmData';
 import { RefreshCw, AlertCircle } from 'lucide-react';
 
-const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
+const API_KEY = 'b42387ab2a4dfe31122859f622f466b2';
 
 interface OWMResponse {
   main: { temp: number; humidity: number };
