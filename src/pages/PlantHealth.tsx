@@ -75,6 +75,7 @@ const PlantHealth = () => {
           healthy: false,
           aiLabel: data.topLabel,
           confidence: data.confidence,
+          aiDescription: data.description,
           data: matchedDisease || diseases?.[0],
         });
       }
