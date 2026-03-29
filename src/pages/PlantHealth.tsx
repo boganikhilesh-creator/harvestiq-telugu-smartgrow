@@ -19,6 +19,7 @@ const PlantHealth = () => {
     healthy: boolean;
     aiLabel?: string;
     confidence?: number;
+    aiDescription?: string;
     data?: typeof diseaseDatabase['rice'][0];
   }>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -61,7 +62,7 @@ const PlantHealth = () => {
       const isHealthy = data.healthy;
       
       if (isHealthy) {
-        setResult({ healthy: true, aiLabel: data.topLabel, confidence: data.confidence });
+        setResult({ healthy: true, aiLabel: data.topLabel, confidence: data.confidence, aiDescription: data.description });
       } else {
         // Try to match AI prediction to our disease database for detailed info
         const diseases = diseaseDatabase[selectedCrop];
@@ -74,6 +75,7 @@ const PlantHealth = () => {
           healthy: false,
           aiLabel: data.topLabel,
           confidence: data.confidence,
+          aiDescription: data.description,
           data: matchedDisease || diseases?.[0],
         });
       }
@@ -210,8 +212,11 @@ const PlantHealth = () => {
                       <span className="font-bold text-sm text-orange-700">AI Detection</span>
                     </div>
                     <p className="text-sm text-orange-700 capitalize">{result.aiLabel?.replace(/_/g, ' ')}</p>
-                    {result.confidence && (
+                     {result.confidence && (
                       <p className="text-xs text-orange-500 mt-1">Confidence: {(result.confidence * 100).toFixed(1)}%</p>
+                    )}
+                    {result.aiDescription && (
+                      <p className="text-xs text-orange-600 mt-1">{result.aiDescription}</p>
                     )}
                   </div>
 
