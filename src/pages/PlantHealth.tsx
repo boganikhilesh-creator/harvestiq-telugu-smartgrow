@@ -210,8 +210,11 @@ const PlantHealth = () => {
                       <span className="font-bold text-sm text-orange-700">AI Detection</span>
                     </div>
                     <p className="text-sm text-orange-700 capitalize">{result.aiLabel?.replace(/_/g, ' ')}</p>
-                    {result.confidence && (
+                     {result.confidence && (
                       <p className="text-xs text-orange-500 mt-1">Confidence: {(result.confidence * 100).toFixed(1)}%</p>
+                    )}
+                    {result.aiDescription && (
+                      <p className="text-xs text-orange-600 mt-1">{result.aiDescription}</p>
                     )}
                   </div>
 
